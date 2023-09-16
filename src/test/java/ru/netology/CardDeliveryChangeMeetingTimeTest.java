@@ -37,4 +37,28 @@ public class CardDeliveryChangeMeetingTimeTest {
         successNotification.$(".notification__title").shouldHave(text("Успешно"));
         successNotification.$(".notification__content").shouldHave(text("Встреча успешно запланирована на " + appointmentDay));
     }
+
+    @Test
+    void shouldRearrangeMeeting() throws InterruptedException {
+        DataGenerator.UserInfo user = DataGenerator.generateUser("ru");
+        String appointmentDay = DataGenerator.generateDate(3);
+
+        SelenideElement form = $("form");
+        form.$("[data-test-id=city] input").setValue(user.getCity());
+        form.$("[data-test-id=date] input").doubleClick().press(Keys.BACK_SPACE).setValue(appointmentDay);
+        form.$("[data-test-id=name] input").setValue(user.getName());
+        form.$("[data-test-id=phone] input").setValue(user.getPhone());
+        form.$("[data-test-id=agreement] .checkbox__box").click();
+        form.$(new ByText("Запланировать")).click();
+
+        appointmentDay = DataGenerator.generateDate(11);
+        form.$("[data-test-id=date] input").doubleClick().press(Keys.BACK_SPACE).setValue(appointmentDay);
+        form.$(new ByText("Запланировать")).click();
+
+        SelenideElement replanNotification = $("[data-test-id=replan-notification]");
+        replanNotification.shouldBe(visible, Duration.ofSeconds(15));
+        replanNotification.$(".notification__title").shouldHave(text("Необходимо подтверждение"));
+        replanNotification.$(".notification__content").shouldHave(text("У вас уже запланирована встреча на другую дату. Перепланировать?"));
+        replanNotification.$(".notification__content .button__text").shouldHave(text("Перепланировать"));
+    }
 }
