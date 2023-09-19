@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.openqa.selenium.Keys;
 
 import java.time.Duration;
+import java.util.Random;
 
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -41,7 +42,9 @@ public class CardDeliveryChangeMeetingTimeTest {
     @Test
     void shouldRearrangeMeeting() throws InterruptedException {
         DataGenerator.UserInfo user = DataGenerator.generateUser("ru");
-        String appointmentDay = DataGenerator.generateDate(3);
+        int minDaysToAdd = 3;
+        String appointmentDay = DataGenerator.generateDate(new Random().nextInt(360)+minDaysToAdd);
+        String diffAppointmentDay = DataGenerator.generateDate(new Random().nextInt(360)+minDaysToAdd);
 
         SelenideElement form = $("form");
         form.$("[data-test-id=city] input").setValue(user.getCity());
@@ -51,14 +54,22 @@ public class CardDeliveryChangeMeetingTimeTest {
         form.$("[data-test-id=agreement] .checkbox__box").click();
         form.$(new ByText("Запланировать")).click();
 
-        appointmentDay = DataGenerator.generateDate(11);
-        form.$("[data-test-id=date] input").doubleClick().press(Keys.BACK_SPACE).setValue(appointmentDay);
+        SelenideElement successNotification = $("[data-test-id=success-notification]");
+        successNotification.shouldBe(visible, Duration.ofSeconds(15));
+        successNotification.$(".notification__title").shouldHave(text("Успешно!"));
+        successNotification.$(".notification__content").shouldHave(text("Встреча успешно запланирована на "+ appointmentDay));
+
+        form.$("[data-test-id=date] input").doubleClick().press(Keys.BACK_SPACE).setValue(diffAppointmentDay);
         form.$(new ByText("Запланировать")).click();
 
         SelenideElement replanNotification = $("[data-test-id=replan-notification]");
         replanNotification.shouldBe(visible, Duration.ofSeconds(15));
         replanNotification.$(".notification__title").shouldHave(text("Необходимо подтверждение"));
         replanNotification.$(".notification__content").shouldHave(text("У вас уже запланирована встреча на другую дату. Перепланировать?"));
-        replanNotification.$(".notification__content .button__text").shouldHave(text("Перепланировать"));
+        replanNotification.$(".notification__content .button__text").shouldHave(text("Перепланировать")).click();
+
+        successNotification.shouldBe(visible, Duration.ofSeconds(15));
+        successNotification.$(".notification__title").shouldHave(text("Успешно!"));
+        successNotification.$(".notification__content").shouldHave(text("Встреча успешно запланирована на "+ diffAppointmentDay));
     }
 }
